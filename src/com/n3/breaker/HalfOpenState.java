@@ -19,14 +19,26 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 	
 	protected HalfOpenState(CircuitBreaker circuitBreaker) {
 		super(circuitBreaker);
-		maxTryTimes = 1;
-		tryTimes = new AtomicInteger(0);
-		successTimes = new AtomicInteger(0);
-		latch = new CountDownLatch(maxTryTimes);
-		executor = Executors.newSingleThreadExecutor();
-		executor.submit(new HalfOpenTask());
-		thresholdRate = null;
-		thresholdTimes = 0;
+		this.maxTryTimes = 1;
+		this.tryTimes = new AtomicInteger(0);
+		this.successTimes = new AtomicInteger(0);
+		this.latch = new CountDownLatch(maxTryTimes);
+		this.executor = Executors.newSingleThreadExecutor();
+		this.executor.submit(new HalfOpenTask());
+		this.thresholdTimes = 0;
+		this.thresholdRate = null;
+	}
+	
+	public HalfOpenState(CircuitBreaker circuitBreaker, int maxTryTimes, int thresholdTimes, BigDecimal thresholdRate) {
+		super(circuitBreaker);
+		this.maxTryTimes = maxTryTimes;
+		this.tryTimes = new AtomicInteger(0);
+		this.successTimes = new AtomicInteger(0);
+		this.latch = new CountDownLatch(maxTryTimes);
+		this.executor = Executors.newSingleThreadExecutor();
+		this.executor.submit(new HalfOpenTask());
+		this.thresholdTimes = thresholdTimes;
+		this.thresholdRate = thresholdRate;
 	}
 	
 	@Override
@@ -46,8 +58,9 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 
 	@Override
 	public void destroy() {
-		// TODO Auto-generated method stub
-
+		if(executor!=null && !executor.isTerminated()) {
+			executor.shutdownNow();
+		}
 	}
 
 	private class HalfOpenTask implements Runnable {
@@ -59,6 +72,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 				new OpenStateTransfer(circuitBreaker).transfer();
+				Thread.currentThread().interrupt();
 				return;
 			}
 			boolean toCloseState = false;

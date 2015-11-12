@@ -9,4 +9,7 @@ public abstract class AbstractCircuitBreakerState implements
 		this.circuitBreaker = circuitBreaker;
 	}
 	
+	public String getName() {
+		return this.getClass().getSimpleName();
+	}
 }

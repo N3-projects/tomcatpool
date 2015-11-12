@@ -14,9 +14,9 @@ public class TestClient {
 		circuitBreaker.setState(state);
 		for(int i=0; i<1000; i++) {
 //			Thread.sleep(new Random().nextInt(30));
-			new ClintThread(circuitBreaker, i).start();
+//			new ClintThread(circuitBreaker, i).start();
 		}
-		System.out.println("done");
+		System.out.println(state.getName());
 		state.destroy();
 	}
 

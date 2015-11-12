@@ -2,11 +2,11 @@ package com.n3.breaker;
 
 public class CircuitBreaker {
 
-	private final String NAME;
+	private final String name;
 	private volatile CircuitBreakerState state;
 	
 	public CircuitBreaker(String name) {
-		NAME = name;
+		this.name = name;
 	}
 	
 	public void handleInCurrentState(Object request,Object asyncResponse) {
@@ -14,8 +14,9 @@ public class CircuitBreaker {
 			state.handle(request);
 //			asyncResponse.resume
 		} catch (Exception e) {
-			
+			e.printStackTrace();
 		}
+		System.out.println("handled "+request+" successfully");
 	}
 
 	public CircuitBreakerState getState() {
@@ -26,8 +27,8 @@ public class CircuitBreaker {
 		this.state = state;
 	}
 
-	public String getNAME() {
-		return NAME;
+	public String getName() {
+		return name;
 	}
 	
 }
