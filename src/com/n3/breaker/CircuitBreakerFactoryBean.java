@@ -41,4 +41,12 @@ public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 		return true;
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 }

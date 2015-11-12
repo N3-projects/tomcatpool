@@ -15,11 +15,11 @@
     
     <!-- <context:component-scan base-package="com.**.service" /> -->
     
-	<bean id="oppcCircuitBreaker" name="oppcCircuitBreaker" class="n3.home.breaker.CircuitBreakerFactoryBean">
+	<bean id="oppcCircuitBreaker" name="oppcCircuitBreaker" class="com.n3.breaker.CircuitBreakerFactoryBean">
 		<property name="name" value="oppc"/>
 	</bean>
 
 	<!-- Jersey Example -->
-    <bean class="n3.home.rest.RestService"/>
+    <bean class="com.n3.rest.RestService"/>
     
 </beans>

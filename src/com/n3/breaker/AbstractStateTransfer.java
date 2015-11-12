@@ -14,7 +14,7 @@ public abstract class AbstractStateTransfer {
 			synchronized(circuitBreaker) {
 				if(!isInSpecialState()) {
 					//TODO load properties from database
-					circuitBreaker.getState().destroy();
+					if(circuitBreaker.getState() != null) circuitBreaker.getState().destroy();
 					return setToSpecialState(new Object());
 				}
 			}
