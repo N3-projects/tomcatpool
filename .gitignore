@@ -1,6 +1,6 @@
 # Java class files
 *.class
-WEB-INF/classes/
+classes/
 
 # generated files
 bin/
