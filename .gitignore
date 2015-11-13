@@ -1,8 +1,6 @@
-# gitignore
-WEB/classes/
 # Java class files
 *.class
-WebRoot/
+WEB-INF/classes/
 
 # generated files
 bin/
