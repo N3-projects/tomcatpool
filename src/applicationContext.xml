@@ -13,13 +13,13 @@
         This is the main Spring configuration file with some of the main "core" classes defined. 
     </description>
     
-    <!-- <context:component-scan base-package="com.**.service" /> -->
+	<!-- Jersey Example -->
+    <context:component-scan base-package="com.n3.rest" />
+    
+    <bean class="com.n3.util.ApplicationContextHolder" />
     
 	<bean id="oppcCircuitBreaker" name="oppcCircuitBreaker" class="com.n3.breaker.CircuitBreakerFactoryBean">
 		<property name="name" value="oppc"/>
 	</bean>
 
-	<!-- Jersey Example -->
-    <bean class="com.n3.rest.RestService"/>
-    
 </beans>
