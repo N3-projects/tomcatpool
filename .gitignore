@@ -1,0 +1,15 @@
+# gitignore
+WEB/classes/
+# Java class files
+*.class
+WebRoot/
+
+# generated files
+bin/
+gen/
+
+# Eclipse project files
+.classpath
+.project
+.settings/
+.svn/
