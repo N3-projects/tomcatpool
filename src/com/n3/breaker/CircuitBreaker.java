@@ -13,10 +13,10 @@ public class CircuitBreaker {
 		try {
 			state.handle(request);
 //			asyncResponse.resume
+			System.out.println("handled "+request+" successfully");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println("handled "+request+" successfully");
 	}
 
 	public CircuitBreakerState getState() {

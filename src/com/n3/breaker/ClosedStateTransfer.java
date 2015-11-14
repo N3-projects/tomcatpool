@@ -8,13 +8,13 @@ public class ClosedStateTransfer extends AbstractStateTransfer {
 
 	@Override
 	protected boolean setToSpecialState(Object properties) {
-		// TODO Auto-generated method stub
-		return false;
+		circuitBreaker.setState(new ClosedState(circuitBreaker));
+		return true;
 	}
 
 	@Override
 	protected boolean isInSpecialState() {
-		return circuitBreaker.getState() instanceof ClosedState;
+		return circuitBreaker.getState()!=null && circuitBreaker.getState() instanceof ClosedState;
 	}
 
 }

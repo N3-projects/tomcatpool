@@ -12,7 +12,10 @@ public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 	
 	@Override
 	public void destroy() throws Exception {	
-		
+		if(targetObject != null) {
+			targetObject.getState().destroy();
+			targetObject.setState(null);
+		}
 	}
 
 	@Override
