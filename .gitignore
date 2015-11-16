@@ -10,4 +10,6 @@ gen/
 .classpath
 .project
 .settings/
+.myeclipse/
+.mymetadata
 .svn/

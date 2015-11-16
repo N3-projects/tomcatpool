@@ -11,7 +11,8 @@ import javax.ws.rs.core.UriInfo;
 import org.springframework.stereotype.Component;
 
 import com.n3.breaker.CircuitBreaker;
-import com.n3.breaker.ClosedState;
+import com.n3.dao.CircuitBreakerConfigDAO;
+import com.n3.logic.CircuitBreakerConfigLogic;
 import com.n3.util.ApplicationContextHolder;
 
 @Component
@@ -27,12 +28,10 @@ public class RestService {
 		Integer i = Integer.valueOf(queryParams.getFirst("test"));
 				
 		// get CircuitBreaker from spring context
-		CircuitBreaker circuitBreaker = new CircuitBreaker("oppc");
-		circuitBreaker.setState(new ClosedState(circuitBreaker));
+		CircuitBreaker circuitBreaker = (CircuitBreaker) ApplicationContextHolder
+				.getApplicationContext().getBean("oppcCircuitBreaker");
 		circuitBreaker.handleInCurrentState(i, null);
-		circuitBreaker.getState().destroy();
-		System.out.println(ApplicationContextHolder.getApplicationContext().getBeansOfType(RestService.class).size());
-		System.out.println(this);
+		
 		return "ok";
 	}
 	

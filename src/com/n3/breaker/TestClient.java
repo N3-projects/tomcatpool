@@ -9,15 +9,15 @@ public class TestClient {
 	 * @throws InterruptedException 
 	 */
 	public static void main(String[] args) throws InterruptedException {
-		CircuitBreaker circuitBreaker = new CircuitBreaker(null);
-		ClosedState state = new ClosedState(circuitBreaker);
-		circuitBreaker.setState(state);
-		for(int i=0; i<1000; i++) {
+//		CircuitBreaker circuitBreaker = new CircuitBreaker(null);
+//		ClosedState state = new ClosedState(circuitBreaker);
+//		circuitBreaker.setState(state);
+//		for(int i=0; i<1000; i++) {
 //			Thread.sleep(new Random().nextInt(30));
 //			new ClintThread(circuitBreaker, i).start();
-		}
-		System.out.println(state.getName());
-		state.destroy();
+//		}
+		System.out.println(Integer.MAX_VALUE);
+//		state.destroy();
 	}
 
 	static class ClintThread extends Thread {

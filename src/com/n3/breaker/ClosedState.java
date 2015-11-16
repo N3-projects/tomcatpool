@@ -9,24 +9,36 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ClosedState extends AbstractCircuitBreakerState {
-
-	private static final long MAX_FAILURE_COUNT = 10;
-	private static final BigDecimal MAX_FAILURE_RATE = new BigDecimal("0.00000001");
 	
 	private final ReentrantReadWriteLock lock;
 	private final ScheduledExecutorService executor;
 
-	private int hotspotCount = 0;
-	private int totalCount = 0;
+	private long thresholdFailureTimes;
+	private BigDecimal thresholdFailureRate;
+
+	private int failureTimes = 0;
+	private int totalTimes = 0;
 	
 	public ClosedState(CircuitBreaker circuitBreaker) {
 		super(circuitBreaker);
 		this.lock = new ReentrantReadWriteLock();
 		this.executor = new ScheduledThreadPoolExecutor(1);
-		this.executor.scheduleWithFixedDelay(new TestSchedule(), 500, 60, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(new ClosedLocalTask(), 500, 60, TimeUnit.SECONDS);
+		thresholdFailureTimes = 100;
+		thresholdFailureRate = new BigDecimal("0.60");
 	}
 	
-	
+	public ClosedState(CircuitBreaker circuitBreaker, long thresholdFailureTimes, BigDecimal thresholdFailureRate, 
+			long delaySeconds, long periodSeconds) {
+		super(circuitBreaker);
+		this.lock = new ReentrantReadWriteLock();
+		this.executor = new ScheduledThreadPoolExecutor(1);
+		this.executor.scheduleAtFixedRate(new ClosedLocalTask(), delaySeconds, periodSeconds, TimeUnit.SECONDS);
+		this.thresholdFailureTimes = thresholdFailureTimes;
+		this.thresholdFailureRate = thresholdFailureRate;
+	}
+
+
 	@Override
 	public void handle(Object obj) {
 		lock.readLock().lock();
@@ -43,13 +55,12 @@ public class ClosedState extends AbstractCircuitBreakerState {
 		
 		lock.writeLock().lock();
 		try {
-			totalCount++;
+			totalTimes++;
 			//如果返回失败，回写失败记录
 			if(!result) {
-				hotspotCount++;
+				failureTimes++;
 				if(isThresholdReached()) {
-					new OpenStateTransfer(circuitBreaker).transfer();
-					System.out.println("circuitBreaker set to OpenState");
+					circuitBreaker.transferToOpenState();
 				}
 			}
 		} finally {
@@ -58,14 +69,14 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	}
 
 	protected boolean isThresholdReached() {
-		if(hotspotCount >= MAX_FAILURE_COUNT) {
-			BigDecimal _t = new BigDecimal(hotspotCount).divide(new BigDecimal(totalCount),3,RoundingMode.HALF_UP);
-			return _t.compareTo(MAX_FAILURE_RATE) >= 0;
+		if(failureTimes >= thresholdFailureTimes) {
+			BigDecimal rate = new BigDecimal(failureTimes).divide(new BigDecimal(totalTimes),3,RoundingMode.HALF_UP);
+			return rate.compareTo(thresholdFailureRate) >= 0;
 		}
 		return false;
 	}
 	
-	private class TestSchedule implements Runnable {
+	private class ClosedLocalTask implements Runnable {
 		@Override
 		public void run() {
 			try {
@@ -75,8 +86,8 @@ public class ClosedState extends AbstractCircuitBreakerState {
 				Thread.interrupted();
 			}
 			try {
-				ClosedState.this.hotspotCount = 0;
-				ClosedState.this.totalCount = 0;
+				ClosedState.this.failureTimes = 0;
+				ClosedState.this.totalTimes = 0;
 			} finally {
 				lock.writeLock().unlock();
 			}
