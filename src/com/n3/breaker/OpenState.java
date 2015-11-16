@@ -15,7 +15,7 @@ public class OpenState extends AbstractCircuitBreakerState {
 	public OpenState(CircuitBreaker circuitBreaker, Long delayMinites) {
 		super(circuitBreaker);
 		executor = new ScheduledThreadPoolExecutor(1);
-		executor.schedule(new OpenStateSchedule(), delayMinites, TimeUnit.MINUTES);
+		executor.schedule(new OpenStateSchedule(), delayMinites, TimeUnit.SECONDS);
 	}
 	
 	@Override
@@ -38,7 +38,7 @@ public class OpenState extends AbstractCircuitBreakerState {
 		@Override
 		public void run() {
 			try {
-				new HalfOpenStateTransfer(circuitBreaker).transfer();
+				circuitBreaker.transferToHalfOpenState();
 			} catch (Exception e) {
 				e.printStackTrace();
 				Thread.interrupted();

@@ -11,6 +11,8 @@ import javax.ws.rs.core.UriInfo;
 import org.springframework.stereotype.Component;
 
 import com.n3.breaker.CircuitBreaker;
+import com.n3.dao.CircuitBreakerConfigDAO;
+import com.n3.logic.CircuitBreakerConfigLogic;
 import com.n3.util.ApplicationContextHolder;
 
 @Component
