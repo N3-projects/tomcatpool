@@ -6,6 +6,8 @@
 
 package com.n3.model;
 
+import java.io.Serializable;
+
 /**
  * TcircuitBreakerStatePk ,用于联合主键.
  * @author 
@@ -13,7 +15,7 @@ package com.n3.model;
  * @since 1.0
  */
 
-public class CircuitBreakerStateConfigPK {
+public class CircuitBreakerStateConfigPK implements Serializable {
 	
 	//key columns START
 	/** 变量  name . */

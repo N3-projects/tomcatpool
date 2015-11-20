@@ -42,13 +42,17 @@ public class CircuitBreaker {
 	public boolean transferToClosedState() {
 		synchronized(this) {
 			if(state!=null && state instanceof ClosedState) {
-				logger.debug("circuit breaker named "+name+" is already in closed state, ignore transfer command");
+				logger.info("circuit breaker named "+name+" is already in closed state, ignore transfer command");
 				return false;
 			}
-			CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
-					ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
-			CircuitBreakerStateConfig stateConfig = 
-					circuitBreakerStateConfigLogic.getStateConfig(ClosedState.class, name);
+			CircuitBreakerStateConfig stateConfig = null;
+			try {
+				CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
+						ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
+				stateConfig = circuitBreakerStateConfigLogic.getStateConfig(ClosedState.class, name);
+			} catch (Exception e) {
+				logger.error("读取CircuitBreakerStateConfig配置失败", e);
+			}
 			ClosedState newState = stateConfig == null ? new ClosedState(this)
 					: new ClosedState(this,
 							stateConfig.getThresholdFailureTimes(),
@@ -59,6 +63,7 @@ public class CircuitBreaker {
 				state.destroy();
 			}
 			state = newState;
+			logger.info("CircuitBreaker "+name+" 已切换至ClosedState");
 		}
 		return true;
 	}
@@ -66,19 +71,24 @@ public class CircuitBreaker {
 	public boolean transferToOpenState() {
 		synchronized(this) {
 			if(state!=null && state instanceof OpenState) {
-				logger.debug("circuit breaker named "+name+" is already in open state, ignore transfer command");
+				logger.info("circuit breaker named "+name+" is already in open state, ignore transfer command");
 				return false;
 			}
-			CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
-					ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
-			CircuitBreakerStateConfig stateConfig = 
-					circuitBreakerStateConfigLogic.getStateConfig(OpenState.class, name);
+			CircuitBreakerStateConfig stateConfig = null;
+			try {
+				CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
+						ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
+				stateConfig = circuitBreakerStateConfigLogic.getStateConfig(OpenState.class, name);
+			} catch (Exception e) {
+				logger.error("读取CircuitBreakerStateConfig配置失败", e);
+			}
 			OpenState newState = stateConfig == null ? new OpenState(this)
 					: new OpenState(this,stateConfig.getDelaySeconds());
 			if(state != null) {
 				state.destroy();
 			}
 			state = newState;
+			logger.info("CircuitBreaker "+name+" 已切换至OpenState");
 		}
 		return true;
 	}
@@ -86,19 +96,27 @@ public class CircuitBreaker {
 	public boolean transferToHalfOpenState() {
 		synchronized(this) {
 			if(state!=null && state instanceof HalfOpenState) {
-				logger.debug("circuit breaker named "+name+" is already in open state, ignore transfer command");
+				logger.info("circuit breaker named "+name+" is already in open state, ignore transfer command");
 				return false;
 			}
-			CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
-					ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
-			CircuitBreakerStateConfig stateConfig = 
-					circuitBreakerStateConfigLogic.getStateConfig(HalfOpenState.class, name);
-			HalfOpenState newState = stateConfig == null ? new HalfOpenState(this)
-			: new HalfOpenState(this,stateConfig.getTargetTimes(),stateConfig.getThresholdSuccessTimes(), stateConfig.getThresholdSuccessRate());
-			if(state != null) {
+			CircuitBreakerStateConfig stateConfig = null;
+			try {
+				CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
+						ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
+				stateConfig = circuitBreakerStateConfigLogic.getStateConfig(HalfOpenState.class, name);
+			} catch (Exception e) {
+				logger.error("读取CircuitBreakerStateConfig配置失败", e);
+			}
+			HalfOpenState newState = stateConfig == null ? new HalfOpenState(
+					this) : new HalfOpenState(this,
+					stateConfig.getTargetTimes(),
+					stateConfig.getThresholdSuccessTimes(),
+					stateConfig.getThresholdSuccessRate());
+			if (state != null) {
 				state.destroy();
 			}
 			state = newState;
+			logger.info("CircuitBreaker "+name+" 已切换至HalfOpenState");
 		}
 		return true;
 	}

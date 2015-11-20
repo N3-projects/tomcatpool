@@ -11,7 +11,8 @@ public class CircuitBreakerStateConfigDAO extends BaseHibernateDAO {
 
 	@SuppressWarnings("unchecked")
 	public List<CircuitBreakerStateConfig> getStateConfig(String stateName, String circuitBreakerName) {
-		return (List<CircuitBreakerStateConfig>) super.getHibernateTemplate().findByNamedQuery(
-				"from CircuitBreakerStateConfig where name =? and circuitBreakerName=?", stateName, circuitBreakerName);
+		return (List<CircuitBreakerStateConfig>) super.getHibernateTemplate().findByNamedParam
+				("from CircuitBreakerStateConfig where name = :name and circuitBreakerName = :circuitBreakerName" ,
+						new String[] {"name","circuitBreakerName"}, new Object[] {stateName,circuitBreakerName});
 	}
 }

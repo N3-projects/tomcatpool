@@ -6,6 +6,7 @@
 
 package com.n3.model;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
@@ -90,6 +91,7 @@ public class CircuitBreakerStateConfig {
 	 * @return java.lang.String
 	 */
 	@Id
+	@Column(name="CIRCUIT_BREAKER_NAME")
 	public java.lang.String getCircuitBreakerName() {
 		return this.circuitBreakerName;
 	}
@@ -105,6 +107,7 @@ public class CircuitBreakerStateConfig {
 	 * @return java.lang.String
 	 */
 	@Id
+	@Column(name="WEB_SERVER_NAME")
 	public java.lang.String getWebServerName() {
 		return this.webServerName;
 	}
@@ -119,6 +122,7 @@ public class CircuitBreakerStateConfig {
 	 * ThresholdSuccessTimes 取值.
 	 * @return java.lang.Long
 	 */
+	@Column(name="THRESHOLD_SUCCESS_TIMES")
 	public java.lang.Long getThresholdSuccessTimes() {
 		return this.thresholdSuccessTimes;
 	}
@@ -133,6 +137,7 @@ public class CircuitBreakerStateConfig {
 	 * ThresholdFailureTimes 取值.
 	 * @return java.lang.Long
 	 */
+	@Column(name="THRESHOLD_FAILURE_TIMES")
 	public java.lang.Long getThresholdFailureTimes() {
 		return this.thresholdFailureTimes;
 	}
@@ -147,6 +152,7 @@ public class CircuitBreakerStateConfig {
 	 * ThresholdSuccessRate 取值.
 	 * @return java.math.BigDecimal
 	 */
+	@Column(name="THRESHOLD_SUCCESS_RATE")
 	public java.math.BigDecimal getThresholdSuccessRate() {
 		return this.thresholdSuccessRate;
 	}
@@ -161,6 +167,7 @@ public class CircuitBreakerStateConfig {
 	 * ThresholdFailureRate 取值.
 	 * @return java.math.BigDecimal
 	 */
+	@Column(name="THRESHOLD_FAILURE_RATE")
 	public java.math.BigDecimal getThresholdFailureRate() {
 		return this.thresholdFailureRate;
 	}
@@ -175,6 +182,7 @@ public class CircuitBreakerStateConfig {
 	 * DelaySeconds 取值.
 	 * @return java.lang.Integer
 	 */
+	@Column(name="DELAY_SECONDS")
 	public java.lang.Long getDelaySeconds() {
 		return this.delaySeconds;
 	}
@@ -189,14 +197,17 @@ public class CircuitBreakerStateConfig {
 	 * PeriodSeconds 取值.
 	 * @return java.lang.Integer
 	 */
+	@Column(name="PERIOD_SECONDS")
 	public java.lang.Long getPeriodSeconds() {
 		return this.periodSeconds;
 	}
+	@Column(name="TARGET_TIMES")
 	public java.lang.Long getTargetTimes() {
 		return targetTimes;
 	}
 	public void setTargetTimes(java.lang.Long targetTimes) {
 		this.targetTimes = targetTimes;
 	}
+	
 }
 

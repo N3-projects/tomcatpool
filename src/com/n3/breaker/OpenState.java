@@ -3,7 +3,12 @@ package com.n3.breaker;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class OpenState extends AbstractCircuitBreakerState {
+	
+	private static final Logger logger = LoggerFactory.getLogger(OpenState.class);
 	
 	private final ScheduledThreadPoolExecutor executor;
 
@@ -19,8 +24,8 @@ public class OpenState extends AbstractCircuitBreakerState {
 	}
 	
 	@Override
-	public void handle(Object obj) {
-		
+	public void handle(Object requestEntity) {
+		logger.debug("OpenState 拒绝请求，requestEntity="+requestEntity);
 	}
 
 	protected boolean isThresholdReached() {
@@ -38,6 +43,7 @@ public class OpenState extends AbstractCircuitBreakerState {
 		@Override
 		public void run() {
 			try {
+				logger.info("达到临界条件，切换至HalfOpenState");
 				circuitBreaker.transferToHalfOpenState();
 			} catch (Exception e) {
 				e.printStackTrace();
