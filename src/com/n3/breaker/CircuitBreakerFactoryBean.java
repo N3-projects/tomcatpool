@@ -33,7 +33,7 @@ public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 			//name does not exists
 			throw new IllegalArgumentException("CircuitBreakerConfig nameed "+name+" dose not exist");
 		}
-		targetObject = new CircuitBreaker(name);
+		targetObject = new CircuitBreaker(name, cb.getConcurrency(), cb.getBufferSize());
 		targetObject.transferToClosedState();
 	}
 

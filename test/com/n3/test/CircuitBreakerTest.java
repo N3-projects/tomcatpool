@@ -7,6 +7,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -24,16 +25,17 @@ public class CircuitBreakerTest {
 	
 	@Test
 	public void testClosedState() throws Exception {
-		int count = 20;
+		int count = 50;
+		final AtomicInteger requestEntity = new AtomicInteger();
 		final CountDownLatch latch = new CountDownLatch(count);
-		ExecutorService executor = Executors.newFixedThreadPool(20);
+		ExecutorService executor = Executors.newCachedThreadPool();
 		List<Future<?>> list = new ArrayList<Future<?>>(count);
 		for(int i=0; i<count; i++) {
 			Future<?> future = executor.submit(new Callable<HttpResponse>() {
 				@Override
 				public HttpResponse call() throws Exception {
 					try {
-						HttpGet request = new HttpGet("http://localhost:8080/tomcatpool/rest/service?test=1");
+						HttpGet request = new HttpGet("http://localhost:8080/tomcatpool/rest/service?test="+requestEntity.incrementAndGet());
 						HttpClient httpclient = HttpClients.createDefault();
 						HttpResponse response = httpclient.execute(request);
 						System.out.println(response.getStatusLine());
@@ -46,46 +48,5 @@ public class CircuitBreakerTest {
 			list.add(future);
 		}
 		latch.await();
-//		for(Future<?> future : list) {
-//			HttpResponse response = (HttpResponse)future.get();
-//			System.out.println(response.getStatusLine());
-//		}
-		
-		
-		/*CloseableHttpAsyncClient httpclient = HttpAsyncClients.createDefault();
-		try {
-			httpclient.start();
-			final HttpGet request = new HttpGet("http://www.apache.org/");
-			FutureCallback<HttpResponse> callback = new FutureCallback<HttpResponse>() {
-				
-				public void completed(final HttpResponse response) {
-					latch.countDown();
-					System.out.println(request.getRequestLine() + "->" + response.getStatusLine());
-				}
-				
-				public void failed(final Exception ex) {
-					latch.countDown();
-					System.out.println(request.getRequestLine() + "->" + ex);
-				}
-				
-				public void cancelled() {
-					latch.countDown();
-					System.out.println(request.getRequestLine() + " cancelled");
-				}
-				
-			};
-			for(int i=0; i<count; i++) {
-				httpclient.execute(request, callback);
-			}
-			latch.await();
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				httpclient.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}*/
 	}
 }

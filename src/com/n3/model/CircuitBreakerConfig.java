@@ -26,21 +26,18 @@ public class CircuitBreakerConfig {
 	
 	//columns START
 	/** 变量 name . */
-	@Id
 	private java.lang.String name;
 	/** 变量 webServerName . */
-	@Id
-	@Column(name="WEB_SERVER_NAME")
 	private java.lang.String webServerName;
 	/** 变量 urlPattern . */
-	@Column(name="URL_PATTERN")
 	private java.lang.String urlPattern;
 	/** 变量 currentState . */
-	@Column(name="CURRENT_STATE")
 	private java.lang.String currentState;
 	/** 变量 lastUpdTs . */
-	@Column(name="LAST_UPD_TS")
 	private String lastUpdTs;
+	
+	private int concurrency;
+	private int bufferSize;
 	//columns END
 
 	/**
@@ -70,6 +67,7 @@ public class CircuitBreakerConfig {
 	 * Name 取值.
 	 * @return java.lang.String
 	 */
+	@Id
 	public java.lang.String getName() {
 		return this.name;
 	}
@@ -84,6 +82,8 @@ public class CircuitBreakerConfig {
 	 * WebServerName 取值.
 	 * @return java.lang.String
 	 */
+	@Id
+	@Column(name="WEB_SERVER_NAME")
 	public java.lang.String getWebServerName() {
 		return this.webServerName;
 	}
@@ -98,6 +98,7 @@ public class CircuitBreakerConfig {
 	 * UrlPattern 取值.
 	 * @return java.lang.String
 	 */
+	@Column(name="URL_PATTERN")
 	public java.lang.String getUrlPattern() {
 		return this.urlPattern;
 	}
@@ -112,6 +113,7 @@ public class CircuitBreakerConfig {
 	 * CurrentState 取值.
 	 * @return java.lang.String
 	 */
+	@Column(name="CURRENT_STATE")
 	public java.lang.String getCurrentState() {
 		return this.currentState;
 	}
@@ -127,8 +129,23 @@ public class CircuitBreakerConfig {
 	 * LastUpdTs 取值.
 	 * @return java.sql.Date
 	 */
+	@Column(name="LAST_UPD_TS")
 	public String getLastUpdTs() {
 		return this.lastUpdTs;
+	}
+	public int getConcurrency() {
+		return concurrency;
+	}
+	public void setConcurrency(int concurrency) {
+		this.concurrency = concurrency;
+	}
+	
+	@Column(name="BUFFER_SIZE")
+	public int getBufferSize() {
+		return bufferSize;
+	}
+	public void setBufferSize(int bufferSize) {
+		this.bufferSize = bufferSize;
 	}
 }
 

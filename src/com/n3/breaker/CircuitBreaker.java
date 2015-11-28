@@ -11,17 +11,26 @@ public class CircuitBreaker {
 
 	private static final Logger logger = LoggerFactory.getLogger(CircuitBreaker.class);
 	private final String name;
+	private final int concurrency;
+	private final int bufferSize;
 	private volatile CircuitBreakerState state;
 	
-	public CircuitBreaker(String name) {
+	public CircuitBreaker(String name, int concurrency, int bufferSize) {
 		this.name = name;
+		this.concurrency = concurrency;
+		this.bufferSize = bufferSize;
 	}
 	
-	public void handleInCurrentState(Object request,Object asyncResponse) {
+	public void handleInCurrentState(final Object request,Object asyncResponse) {
 		try {
+			new Thread(){
+				@Override
+				public void run() {
+					state.handle(request);
+					
+				}};
 			state.handle(request);
 //			asyncResponse.resume
-			System.out.println("handled "+request+" successfully");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -125,5 +134,13 @@ public class CircuitBreaker {
 		if(state != null) {
 			state.destroy();
 		}
+	}
+
+	public int getConcurrency() {
+		return concurrency;
+	}
+
+	public int getBufferSize() {
+		return bufferSize;
 	}
 }

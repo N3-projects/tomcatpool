@@ -30,7 +30,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		this.successTimes = new AtomicLong(0);
 		this.latch = new CountDownLatch(20);
 		this.executor = Executors.newSingleThreadExecutor();
-		this.executor.submit(new HalfOpenTask());
+		this.executor.submit(new HalfOpenStateTask());
 		this.thresholdTimes = 0;
 		this.thresholdRate = null;
 	}
@@ -42,7 +42,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		this.successTimes = new AtomicLong(0);
 		this.latch = new CountDownLatch(maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
 		this.executor = Executors.newSingleThreadExecutor();
-		this.executor.submit(new HalfOpenTask());
+		this.executor.submit(new HalfOpenStateTask());
 		this.thresholdTimes = thresholdTimes;
 		this.thresholdRate = thresholdRate;
 	}
@@ -50,16 +50,17 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 	@Override
 	public void handle(Object requestEntity) {
 		if(tryTimes.incrementAndGet() > maxTryTimes) {
-			logger.debug("HalfOpenState 忽略请求，requestEntity="+requestEntity);
+			logger.debug("HalfOpenState 拒绝请求，requestEntity="+requestEntity);
 			return;
 		}
 		
 		//提交执行远程RPC
-		boolean success = new Random().nextBoolean();
+		boolean result = new Random().nextBoolean();
+		logger.debug("HalfOpenState 处理完成：requestEntity="+requestEntity+" result="+result);
 		
-		if(success) {
+		if(result) {
 			long currSuccess = successTimes.incrementAndGet();
-			logger.debug("HalfOpenState 返回成功，成功次数"+currSuccess);
+			logger.debug("HalfOpenState 返回成功，成功次数"+currSuccess+" requestEntity="+requestEntity+" result="+result);
 		}
 		latch.countDown();
 	}
@@ -71,7 +72,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		}
 	}
 
-	private class HalfOpenTask implements Runnable {
+	private class HalfOpenStateTask implements Runnable {
 
 		@Override
 		public void run() {
