@@ -34,11 +34,11 @@ public class CircuitBreakerTest {
 			Future<?> future = executor.submit(new Callable<HttpResponse>() {
 				@Override
 				public HttpResponse call() throws Exception {
-					try {
+					try {	
 						HttpGet request = new HttpGet("http://localhost:8080/tomcatpool/rest/service?test="+requestEntity.incrementAndGet());
 						HttpClient httpclient = HttpClients.createDefault();
 						HttpResponse response = httpclient.execute(request);
-						System.out.println(response.getStatusLine());
+						System.out.println(response.getStatusLine()+"---"+response.getEntity().toString());
 						return response;
 					} finally {
 						latch.countDown();

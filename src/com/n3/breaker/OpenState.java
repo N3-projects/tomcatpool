@@ -24,8 +24,9 @@ public class OpenState extends AbstractCircuitBreakerState {
 	}
 	
 	@Override
-	public void handle(Object requestEntity) {
+	public Object handle(Object requestEntity) {
 		logger.debug("OpenState 拒绝请求，requestEntity="+requestEntity);
+		return false;
 	}
 
 	protected boolean isThresholdReached() {

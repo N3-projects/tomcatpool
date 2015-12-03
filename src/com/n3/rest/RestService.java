@@ -28,9 +28,9 @@ public class RestService {
 		// get CircuitBreaker from spring context
 		CircuitBreaker circuitBreaker = (CircuitBreaker) ApplicationContextHolder
 				.getApplicationContext().getBean("oppcCircuitBreaker");
-		circuitBreaker.handleInCurrentState(i, null);
 		
-		return "ok";
+		
+		return circuitBreaker.handleInCurrentState(i).toString();
 	}
 	
 }

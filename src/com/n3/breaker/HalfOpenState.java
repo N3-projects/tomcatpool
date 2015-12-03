@@ -48,10 +48,10 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 	}
 	
 	@Override
-	public void handle(Object requestEntity) {
+	public Object handle(Object requestEntity) {
 		if(tryTimes.incrementAndGet() > maxTryTimes) {
 			logger.debug("HalfOpenState 拒绝请求，requestEntity="+requestEntity);
-			return;
+			return false;
 		}
 		
 		//提交执行远程RPC
@@ -63,6 +63,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 			logger.debug("HalfOpenState 返回成功，成功次数"+currSuccess+" requestEntity="+requestEntity+" result="+result);
 		}
 		latch.countDown();
+		return result;
 	}
 
 	@Override

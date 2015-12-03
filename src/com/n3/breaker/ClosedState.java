@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
@@ -59,41 +60,48 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	}
 
 	@Override
-	public void handle(Object requestEntity) {
+	public Object handle(Object requestEntity) {
 		lock.readLock().lock();
 		try {
 			//如果达到临界条件，返回
 			if(isThresholdReached()) {
 				logger.debug("ClosedState 拒绝请求：requestEntity="+requestEntity);
-				return;
+				return false;
 			}
 		} finally {
 			lock.readLock().unlock();
 		}
 		//未达到临界条件，提交任务，阻塞等待任务返回
 		Future<Boolean> future = null;
+		
 		try {
 			 future = internalPool.submit(new InternalCallable(requestEntity));
 		} catch (RejectedExecutionException e) {
-			// TODO: handle exception
+			logger.error("加入到任务队列出错 requestEntity="+requestEntity);
+			return false;
 		}
 		
-		boolean result = false;
-		try {
-			System.out.println("before get:"+requestEntity);
-			result = future.get();
-			System.out.println("after get:"+requestEntity);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-		}
 		/* 同步方式
-		*/
-		
+		 */ 
+		Boolean result;
+		try {
+			result = future.get(10L,TimeUnit.SECONDS);
+		} catch (TimeoutException e) {
+			logger.error("请求超时:"+requestEntity);
+			result = false;
+		} catch (InterruptedException e) {
+			logger.error("请求中断:"+requestEntity,e);
+			result = false;
+		} catch (ExecutionException e) {
+			logger.error("处理失败:"+requestEntity,e);
+			result = false;
+		} finally {
+			future.cancel(true);
+		}
+		return result;
 	}
 
-	private void callback(Object requestEntity, Boolean result) {
+	private void writeback(Object requestEntity, Boolean result) {
 		lock.writeLock().lock();
 		try {
 			totalTimes++;
@@ -135,17 +143,15 @@ public class ClosedState extends AbstractCircuitBreakerState {
 				Thread.sleep(2000L);
 				result = new Random().nextBoolean();
 				logger.debug("ClosedState 处理完成：requestEntity="+requestEntity+" result="+result);
-				ClosedState.this.callback(requestEntity,result);
+				ClosedState.this.writeback(requestEntity,result);
 				return result;
 			} catch (InterruptedException e) {
-				logger.error("交易终止", e);
+				logger.error("交易中断：requestEntity="+requestEntity);
 				throw e;
-//				Thread.currentThread().interrupt();
 			} catch (Exception e) {
-				logger.error("交易失败", e);
+				logger.error("交易失败：requestEntity="+requestEntity, e);
 				throw e;
 			}
-//			return result;
 		}
 	
 	}
@@ -157,7 +163,7 @@ public class ClosedState extends AbstractCircuitBreakerState {
 			try {
 				lock.writeLock().lockInterruptibly();
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				logger.error("", e);
 				Thread.interrupted();
 			}
 			try {
@@ -177,14 +183,8 @@ public class ClosedState extends AbstractCircuitBreakerState {
 			executor.shutdownNow();
 		}
 		if(internalPool!=null && !internalPool.isTerminated()) {
-			internalPool.shutdownNow();
-		}
-		try {
-			if(!internalPool.awaitTermination(6000L, TimeUnit.MILLISECONDS)) {
-				System.out.println("internalPool does not terminated");
-			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+			// 已提交请求不会中断，根据其自身超时时间返回
+			internalPool.shutdown();
 		}
 	}
 }

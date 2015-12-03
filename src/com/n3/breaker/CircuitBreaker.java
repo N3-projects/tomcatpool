@@ -21,28 +21,9 @@ public class CircuitBreaker {
 		this.bufferSize = bufferSize;
 	}
 	
-	public void handleInCurrentState(final Object request,Object asyncResponse) {
-		try {
-			new Thread(){
-				@Override
-				public void run() {
-					state.handle(request);
-					
-				}};
-			state.handle(request);
-//			asyncResponse.resume
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	public Object handleInCurrentState(Object request) {
+		return state.handle(request);
 	}
-
-	/*public CircuitBreakerState getState() {
-		return state;
-	}
-
-	public void setState(CircuitBreakerState state) {
-		this.state = state;
-	}*/
 
 	public String getName() {
 		return name;
