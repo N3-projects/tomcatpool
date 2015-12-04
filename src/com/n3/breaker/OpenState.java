@@ -1,5 +1,8 @@
 package com.n3.breaker;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -24,9 +27,9 @@ public class OpenState extends AbstractCircuitBreakerState {
 	}
 	
 	@Override
-	public Object handle(Object requestEntity) {
-		logger.debug("OpenState 拒绝请求，requestEntity="+requestEntity);
-		return false;
+	public Future<ResponseDTO> handle(Callable<ResponseDTO> task) {
+//		logger.debug("OpenState 拒绝请求，requestEntity="+task.);
+		throw new RejectedExecutionException("OpenState Threshold Reached");
 	}
 
 	protected boolean isThresholdReached() {
@@ -51,6 +54,11 @@ public class OpenState extends AbstractCircuitBreakerState {
 				Thread.interrupted();
 			}
 		}
+	}
+
+	@Override
+	public void writeback(Object requestEntity, ResponseDTO responseDTO) {
+		
 	}
 	
 }

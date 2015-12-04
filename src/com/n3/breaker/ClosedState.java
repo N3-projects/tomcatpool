@@ -2,9 +2,7 @@ package com.n3.breaker;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -14,7 +12,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
@@ -28,8 +25,8 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	private final ScheduledExecutorService executor;
 	private final ExecutorService internalPool;
 
-	private long thresholdFailureTimes;
-	private BigDecimal thresholdFailureRate;
+	private final long thresholdFailureTimes;
+	private final BigDecimal thresholdFailureRate;
 
 	private int failureTimes = 0;
 	private int totalTimes = 0;
@@ -60,55 +57,29 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	}
 
 	@Override
-	public Object handle(Object requestEntity) {
+	public Future<ResponseDTO> handle(Callable<ResponseDTO> task) {
 		lock.readLock().lock();
 		try {
 			//如果达到临界条件，返回
 			if(isThresholdReached()) {
-				logger.debug("ClosedState 拒绝请求：requestEntity="+requestEntity);
-				return false;
+//				logger.debug("ClosedState 拒绝请求：requestEntity="+requestEntity);
+				throw new RejectedExecutionException("ClosedState Threshold Reached");
 			}
 		} finally {
 			lock.readLock().unlock();
 		}
-		//未达到临界条件，提交任务，阻塞等待任务返回
-		Future<Boolean> future = null;
-		
-		try {
-			 future = internalPool.submit(new InternalCallable(requestEntity));
-		} catch (RejectedExecutionException e) {
-			logger.error("加入到任务队列出错 requestEntity="+requestEntity);
-			return false;
-		}
-		
-		/* 同步方式
-		 */ 
-		Boolean result;
-		try {
-			result = future.get(10L,TimeUnit.SECONDS);
-		} catch (TimeoutException e) {
-			logger.error("请求超时:"+requestEntity);
-			result = false;
-		} catch (InterruptedException e) {
-			logger.error("请求中断:"+requestEntity,e);
-			result = false;
-		} catch (ExecutionException e) {
-			logger.error("处理失败:"+requestEntity,e);
-			result = false;
-		} finally {
-			future.cancel(true);
-		}
-		return result;
+		return internalPool.submit(task);
 	}
 
-	private void writeback(Object requestEntity, Boolean result) {
+	@Override
+	public void writeback(Object requestEntity, ResponseDTO responseDTO) {
 		lock.writeLock().lock();
 		try {
 			totalTimes++;
 			//如果返回失败，回写失败记录
-			if(!result) {
+			if(!responseDTO.isExceptionOccured()) {
 				failureTimes++;
-				logger.debug("返回错误，错误次数"+failureTimes+" 总数"+totalTimes+" requestEntity="+requestEntity+" result="+result);
+				logger.debug("返回错误，错误次数"+failureTimes+" 总数"+totalTimes+" requestEntity="+requestEntity+" result="+responseDTO.getResponseEntity());
 				if(isThresholdReached()) {
 					logger.info("达到临界条件，切换至OpenState");
 					circuitBreaker.transferToOpenState();
@@ -126,34 +97,6 @@ public class ClosedState extends AbstractCircuitBreakerState {
 					RoundingMode.HALF_UP).compareTo(thresholdFailureRate) >= 0;
 		}
 		return false;
-	}
-	
-	private class InternalCallable implements Callable<Boolean> {
-
-		Object requestEntity;
-		
-		InternalCallable(Object requestEntity) {
-			this.requestEntity = requestEntity;
-		}
-		
-		@Override
-		public Boolean call() throws Exception {
-			Boolean result = null;
-			try {
-				Thread.sleep(2000L);
-				result = new Random().nextBoolean();
-				logger.debug("ClosedState 处理完成：requestEntity="+requestEntity+" result="+result);
-				ClosedState.this.writeback(requestEntity,result);
-				return result;
-			} catch (InterruptedException e) {
-				logger.error("交易中断：requestEntity="+requestEntity);
-				throw e;
-			} catch (Exception e) {
-				logger.error("交易失败：requestEntity="+requestEntity, e);
-				throw e;
-			}
-		}
-	
 	}
 	
 	private class ClosedStateTask implements Runnable {
@@ -187,4 +130,5 @@ public class ClosedState extends AbstractCircuitBreakerState {
 			internalPool.shutdown();
 		}
 	}
+
 }

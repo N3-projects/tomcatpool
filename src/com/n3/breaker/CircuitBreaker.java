@@ -1,5 +1,11 @@
 package com.n3.breaker;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,9 +27,42 @@ public class CircuitBreaker {
 		this.bufferSize = bufferSize;
 	}
 	
-	public Object handleInCurrentState(Object request) {
-		return state.handle(request);
+	public ResponseDTO syncHandle(Callable<ResponseDTO> task, Object requestEntity, long timeoutSeconds)
+			throws TimeoutException, InterruptedException, ExecutionException {
+		if(task==null) {
+			throw new IllegalArgumentException("callable task can not be null");
+		}
+		ResponseDTO result = null;
+		final CircuitBreakerState currentState = state;
+		Future<ResponseDTO> future = currentState.handle(task);
+		try {
+			result = future.get(timeoutSeconds, TimeUnit.SECONDS);
+		} catch (TimeoutException e) {
+			logger.error("请求超时:" + requestEntity);
+			throw e;
+		} catch (InterruptedException e) {
+			logger.error("请求中断:" + requestEntity, e);
+			throw e;
+		} catch (ExecutionException e) {
+			logger.error("处理失败:" + requestEntity, e);
+			throw e;
+		} finally {
+			future.cancel(true);
+			currentState.writeback(requestEntity, result);
+		}
+		return result;
 	}
+	
+//	TODO
+//	/**
+//	 * required jersey2.2 tomcat7
+//	 * @param task
+//	 * @param asyncResponse
+//	 * @return
+//	 */
+//	public void asyncHandle(Callable<?> task, AsyncResponse asyncResponse) {
+//		return state.handle(task);
+//	}
 
 	public String getName() {
 		return name;

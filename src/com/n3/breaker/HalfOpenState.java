@@ -3,9 +3,12 @@ package com.n3.breaker;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -35,6 +38,31 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		this.thresholdRate = null;
 	}
 	
+	@Override
+	public Future<ResponseDTO> handle(Callable<ResponseDTO> task) {
+		if(tryTimes.incrementAndGet() > maxTryTimes) {
+//			logger.debug("HalfOpenState 拒绝请求，requestEntity="+requestEntity);
+			throw new RejectedExecutionException("HalfOpenState Threshold Reached");
+		}
+		
+		latch.countDown();
+		//提交执行远程RPC
+		boolean result = new Random().nextBoolean();
+		logger.debug("HalfOpenState 处理完成：requestEntity="+requestEntity+" result="+result);
+		
+		return result;
+	}
+	
+	@Override
+	public void writeback(Object requestEntity, ResponseDTO responseDTO) {
+		// TODO Auto-generated method stub
+		
+		if(result) {
+			long currSuccess = successTimes.incrementAndGet();
+			logger.debug("HalfOpenState 返回成功，成功次数"+currSuccess+" requestEntity="+requestEntity+" result="+result);
+		}
+	}
+	
 	public HalfOpenState(CircuitBreaker circuitBreaker, long maxTryTimes, long thresholdTimes, BigDecimal thresholdRate) {
 		super(circuitBreaker);
 		this.maxTryTimes = maxTryTimes;
@@ -47,25 +75,6 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		this.thresholdRate = thresholdRate;
 	}
 	
-	@Override
-	public Object handle(Object requestEntity) {
-		if(tryTimes.incrementAndGet() > maxTryTimes) {
-			logger.debug("HalfOpenState 拒绝请求，requestEntity="+requestEntity);
-			return false;
-		}
-		
-		//提交执行远程RPC
-		boolean result = new Random().nextBoolean();
-		logger.debug("HalfOpenState 处理完成：requestEntity="+requestEntity+" result="+result);
-		
-		if(result) {
-			long currSuccess = successTimes.incrementAndGet();
-			logger.debug("HalfOpenState 返回成功，成功次数"+currSuccess+" requestEntity="+requestEntity+" result="+result);
-		}
-		latch.countDown();
-		return result;
-	}
-
 	@Override
 	public void destroy() {
 		if(executor!=null && !executor.isTerminated()) {
