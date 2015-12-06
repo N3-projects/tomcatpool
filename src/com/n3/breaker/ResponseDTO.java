@@ -6,4 +6,5 @@ public interface ResponseDTO {
 	
 	public boolean isExceptionOccured();
 	
+	public Exception getExcetion();
 }

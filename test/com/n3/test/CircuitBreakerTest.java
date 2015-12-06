@@ -25,7 +25,7 @@ public class CircuitBreakerTest {
 	
 	@Test
 	public void testClosedState() throws Exception {
-		int count = 50;
+		int count = 10;
 		final AtomicInteger requestEntity = new AtomicInteger();
 		final CountDownLatch latch = new CountDownLatch(count);
 		ExecutorService executor = Executors.newCachedThreadPool();
@@ -38,7 +38,7 @@ public class CircuitBreakerTest {
 						HttpGet request = new HttpGet("http://localhost:8080/tomcatpool/rest/service?test="+requestEntity.incrementAndGet());
 						HttpClient httpclient = HttpClients.createDefault();
 						HttpResponse response = httpclient.execute(request);
-						System.out.println(response.getStatusLine()+"---"+response.getEntity().toString());
+						System.out.println(response.getStatusLine()+"---"+response.getEntity().getContent());
 						return response;
 					} finally {
 						latch.countDown();

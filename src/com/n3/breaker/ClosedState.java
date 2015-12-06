@@ -35,18 +35,17 @@ public class ClosedState extends AbstractCircuitBreakerState {
 		super(circuitBreaker);
 		this.lock = new ReentrantReadWriteLock();
 		this.executor = new ScheduledThreadPoolExecutor(1);
-		this.executor.scheduleAtFixedRate(new ClosedStateTask(), 3, 60, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(new ClosedStateTask(), 60, 60, TimeUnit.SECONDS);
 		this.thresholdFailureTimes = 100;
 		this.thresholdFailureRate = new BigDecimal("0.60");
 		this.internalPool = Executors.newFixedThreadPool(200);
 	}
 	
-	public ClosedState(CircuitBreaker circuitBreaker, long thresholdFailureTimes, BigDecimal thresholdFailureRate, 
-			long delaySeconds, long periodSeconds) {
+	public ClosedState(CircuitBreaker circuitBreaker, long thresholdFailureTimes, BigDecimal thresholdFailureRate, long periodSeconds) {
 		super(circuitBreaker);
 		this.lock = new ReentrantReadWriteLock();
 		this.executor = new ScheduledThreadPoolExecutor(1);
-		this.executor.scheduleAtFixedRate(new ClosedStateTask(), delaySeconds, periodSeconds, TimeUnit.SECONDS);
+		this.executor.scheduleAtFixedRate(new ClosedStateTask(), periodSeconds, periodSeconds, TimeUnit.SECONDS);
 		this.thresholdFailureTimes = thresholdFailureTimes;
 		this.thresholdFailureRate = thresholdFailureRate;
 		this.internalPool = new ThreadPoolExecutor(
@@ -77,7 +76,7 @@ public class ClosedState extends AbstractCircuitBreakerState {
 		try {
 			totalTimes++;
 			//如果返回失败，回写失败记录
-			if(!responseDTO.isExceptionOccured()) {
+			if(responseDTO!=null && responseDTO.isExceptionOccured()) {
 				failureTimes++;
 				logger.debug("返回错误，错误次数"+failureTimes+" 总数"+totalTimes+" requestEntity="+requestEntity+" result="+responseDTO.getResponseEntity());
 				if(isThresholdReached()) {

@@ -7,6 +7,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.n3.dao.CircuitBreakerStateConfigDAO;
+import com.n3.rest.RestService;
 
 public class SpringComponentTest {
 
@@ -14,7 +15,7 @@ public class SpringComponentTest {
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		context = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+		context = new ClassPathXmlApplicationContext("classpath:applicationContext.xml","classpath:applicationContext-*.xml");
 	}
 	
 	@AfterClass
@@ -22,9 +23,11 @@ public class SpringComponentTest {
 	}
 
 	@Test
-	public void testGetStateConfig() {
-		CircuitBreakerStateConfigDAO dao = context.getBean(CircuitBreakerStateConfigDAO.class);
-		dao.getStateConfig("ClosedState", "oppc");
+	public void testGetStateConfig() throws Exception {
+//		CircuitBreakerStateConfigDAO dao = context.getBean(CircuitBreakerStateConfigDAO.class);
+//		dao.getStateConfig("ClosedState", "oppc");
+		RestService service = context.getBean(RestService.class);
+		service.service(null);
 	}
 
 }

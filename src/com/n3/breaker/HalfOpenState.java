@@ -2,12 +2,12 @@ package com.n3.breaker;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,21 +45,19 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 			throw new RejectedExecutionException("HalfOpenState Threshold Reached");
 		}
 		
-		latch.countDown();
 		//提交执行远程RPC
-		boolean result = new Random().nextBoolean();
-		logger.debug("HalfOpenState 处理完成：requestEntity="+requestEntity+" result="+result);
-		
-		return result;
+//		logger.debug("HalfOpenState 处理完成：requestEntity="+requestEntity+" result="+result);
+		FutureTask<ResponseDTO> future = new FutureTask<ResponseDTO>(task);
+		new Thread(future).start();
+		return future;
 	}
 	
 	@Override
 	public void writeback(Object requestEntity, ResponseDTO responseDTO) {
-		// TODO Auto-generated method stub
-		
-		if(result) {
+		latch.countDown();
+		if(responseDTO!=null && !responseDTO.isExceptionOccured()) {
 			long currSuccess = successTimes.incrementAndGet();
-			logger.debug("HalfOpenState 返回成功，成功次数"+currSuccess+" requestEntity="+requestEntity+" result="+result);
+			logger.debug("HalfOpenState 返回成功，成功次数"+currSuccess+" requestEntity="+requestEntity+" result="+responseDTO.getResponseEntity());
 		}
 	}
 	

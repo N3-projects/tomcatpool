@@ -3,6 +3,7 @@ package com.n3.breaker;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -34,18 +35,24 @@ public class CircuitBreaker {
 		}
 		ResponseDTO result = null;
 		final CircuitBreakerState currentState = state;
-		Future<ResponseDTO> future = currentState.handle(task);
+		Future<ResponseDTO> future = null;
+		try {
+			future = currentState.handle(task);
+		} catch(RejectedExecutionException e) {
+			logger.error(currentState.getClass().getSimpleName()+"拒绝请求:" + requestEntity);
+			return new CommonExceptionResponse(e);
+		} 
 		try {
 			result = future.get(timeoutSeconds, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
 			logger.error("请求超时:" + requestEntity);
-			throw e;
+			return new CommonExceptionResponse(e);
 		} catch (InterruptedException e) {
 			logger.error("请求中断:" + requestEntity, e);
-			throw e;
+			return new CommonExceptionResponse(e);
 		} catch (ExecutionException e) {
 			logger.error("处理失败:" + requestEntity, e);
-			throw e;
+			return new CommonExceptionResponse(e);
 		} finally {
 			future.cancel(true);
 			currentState.writeback(requestEntity, result);
@@ -86,7 +93,6 @@ public class CircuitBreaker {
 					: new ClosedState(this,
 							stateConfig.getThresholdFailureTimes(),
 							stateConfig.getThresholdFailureRate(),
-							stateConfig.getDelaySeconds(),
 							stateConfig.getPeriodSeconds());
 			if (state != null) {
 				state.destroy();
