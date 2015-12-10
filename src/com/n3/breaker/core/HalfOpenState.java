@@ -1,4 +1,4 @@
-package com.n3.breaker;
+package com.n3.breaker.core;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.n3.breaker.ResponseDTO;
+
 public class HalfOpenState extends AbstractCircuitBreakerState {
 
 	private static final Logger logger = LoggerFactory.getLogger(HalfOpenState.class);
@@ -26,7 +28,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 	private final BigDecimal thresholdRate;
 	private final long thresholdTimes;
 	
-	protected HalfOpenState(CircuitBreaker circuitBreaker) {
+	protected HalfOpenState(DefaultCircuitBreaker circuitBreaker) {
 		super(circuitBreaker);
 		this.maxTryTimes = 1;
 		this.tryTimes = new AtomicLong(0);
@@ -61,7 +63,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		}
 	}
 	
-	public HalfOpenState(CircuitBreaker circuitBreaker, long maxTryTimes, long thresholdTimes, BigDecimal thresholdRate) {
+	public HalfOpenState(DefaultCircuitBreaker circuitBreaker, long maxTryTimes, long thresholdTimes, BigDecimal thresholdRate) {
 		super(circuitBreaker);
 		this.maxTryTimes = maxTryTimes;
 		this.tryTimes = new AtomicLong(0);

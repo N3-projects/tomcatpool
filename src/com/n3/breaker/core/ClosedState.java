@@ -1,4 +1,4 @@
-package com.n3.breaker;
+package com.n3.breaker.core;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,6 +17,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.n3.breaker.ResponseDTO;
+
 public class ClosedState extends AbstractCircuitBreakerState {
 	
 	private static final Logger logger = LoggerFactory.getLogger(ClosedState.class);
@@ -31,7 +33,7 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	private int failureTimes = 0;
 	private int totalTimes = 0;
 	
-	public ClosedState(CircuitBreaker circuitBreaker) {
+	public ClosedState(DefaultCircuitBreaker circuitBreaker) {
 		super(circuitBreaker);
 		this.lock = new ReentrantReadWriteLock();
 		this.executor = new ScheduledThreadPoolExecutor(1);
@@ -41,7 +43,7 @@ public class ClosedState extends AbstractCircuitBreakerState {
 		this.internalPool = Executors.newFixedThreadPool(200);
 	}
 	
-	public ClosedState(CircuitBreaker circuitBreaker, long thresholdFailureTimes, BigDecimal thresholdFailureRate, long periodSeconds) {
+	public ClosedState(DefaultCircuitBreaker circuitBreaker, long thresholdFailureTimes, BigDecimal thresholdFailureRate, long periodSeconds) {
 		super(circuitBreaker);
 		this.lock = new ReentrantReadWriteLock();
 		this.executor = new ScheduledThreadPoolExecutor(1);

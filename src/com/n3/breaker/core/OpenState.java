@@ -1,4 +1,4 @@
-package com.n3.breaker;
+package com.n3.breaker.core;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -9,18 +9,21 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpenState extends AbstractCircuitBreakerState {
+import com.n3.breaker.CircuitBreaker;
+import com.n3.breaker.ResponseDTO;
+
+class OpenState extends AbstractCircuitBreakerState {
 	
 	private static final Logger logger = LoggerFactory.getLogger(OpenState.class);
 	
 	private final ScheduledThreadPoolExecutor executor;
 
-	protected OpenState(CircuitBreaker circuitBreaker) {
+	protected OpenState(DefaultCircuitBreaker circuitBreaker) {
 		super(circuitBreaker);
 		executor = null;
 	}
 	
-	public OpenState(CircuitBreaker circuitBreaker, Long delayMinites) {
+	public OpenState(DefaultCircuitBreaker circuitBreaker, Long delayMinites) {
 		super(circuitBreaker);
 		executor = new ScheduledThreadPoolExecutor(1);
 		executor.schedule(new OpenStateSchedule(), delayMinites, TimeUnit.SECONDS);

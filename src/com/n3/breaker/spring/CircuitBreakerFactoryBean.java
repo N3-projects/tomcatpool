@@ -1,9 +1,11 @@
-package com.n3.breaker;
+package com.n3.breaker.spring;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
+import com.n3.breaker.CircuitBreaker;
+import com.n3.breaker.core.DefaultCircuitBreaker;
 import com.n3.logic.CircuitBreakerConfigLogic;
 import com.n3.model.CircuitBreakerConfig;
 import com.n3.util.ApplicationContextHolder;
@@ -33,8 +35,8 @@ public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 			//name does not exists
 			throw new IllegalArgumentException("CircuitBreakerConfig nameed "+name+" dose not exist");
 		}
-		targetObject = new CircuitBreaker(name, cb.getConcurrency(), cb.getBufferSize());
-		targetObject.transferToClosedState();
+		targetObject = new DefaultCircuitBreaker(name, cb.getConcurrency(), cb.getBufferSize());
+//		targetObject.transferToClosedState();
 	}
 
 	@Override

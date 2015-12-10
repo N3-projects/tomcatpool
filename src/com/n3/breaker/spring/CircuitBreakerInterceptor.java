@@ -1,41 +1,47 @@
-package com.n3.breaker;
+package com.n3.breaker.spring;
+
+import java.io.Serializable;
+import java.util.concurrent.Callable;
 
 import javax.ws.rs.core.UriInfo;
 
-import org.aspectj.lang.ProceedingJoinPoint;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 
-public class CircuitBreakerAspect implements ApplicationContextAware {
+import com.n3.breaker.CircuitBreaker;
+import com.n3.breaker.ResponseDTO;
+import com.n3.util.ApplicationContextHolder;
 
-	private static final Logger logger = LoggerFactory.getLogger(CircuitBreakerAspect.class);
-	private ApplicationContext applicationContext;
+public class CircuitBreakerInterceptor implements MethodInterceptor, Serializable{
+
+	private static final long serialVersionUID = -6594338383457482623L;
+	private static final Logger logger = LoggerFactory.getLogger(CircuitBreakerInterceptor.class);
 	
-	public Object invoke(ProceedingJoinPoint pjp) throws Throwable {
-		System.out.println("just a test");
-		Object str = pjp.getArgs()[0];
+	@Override
+	public Object invoke(MethodInvocation invocation) throws Throwable {
+		System.out.println(this);
+		Object str = invocation.getArguments()[0];
 		UriInfo uriInfo = (UriInfo)str;
 		int i = Integer.parseInt(uriInfo.getQueryParameters().getFirst("test"));
 		if(i>0) {
 			// get CircuitBreaker from spring context
-			CircuitBreaker circuitBreaker = (CircuitBreaker)applicationContext.getBean("oppcCircuitBreaker");
+			CircuitBreaker circuitBreaker = (CircuitBreaker) ApplicationContextHolder
+					.getApplicationContext().getBean("oppcCircuitBreaker");
 			
-			ResponseDTO dto = circuitBreaker.syncHandle(new InternalRequest(pjp), i, 10L);
+			ResponseDTO dto = circuitBreaker.syncHandle(new InternalRequest(invocation), i, 10L);
 			return dto.isExceptionOccured() ? dto.getExcetion().getMessage() : dto
 					.getResponseEntity().toString();
 		}
-		System.out.println();
-		return pjp.proceed();
+		return invocation.proceed();
 	}
 
-	private class InternalRequest implements RequestTask {
+	private class InternalRequest implements Callable<ResponseDTO> {
 
-		ProceedingJoinPoint invocation;
+		MethodInvocation invocation;
 		
-		InternalRequest(ProceedingJoinPoint invocation) {
+		InternalRequest(MethodInvocation invocation) {
 			this.invocation = invocation;
 		}
 		
@@ -48,11 +54,6 @@ public class CircuitBreakerAspect implements ApplicationContextAware {
 				logger.error("交易失败", e);
 				throw new Exception(e);
 			}
-		}
-
-		@Override
-		public Object getRequestEntity() {
-			return invocation;
 		}
 	
 	}
@@ -82,12 +83,6 @@ public class CircuitBreakerAspect implements ApplicationContextAware {
 			return isException ? null : new Exception("some exception occured");
 		}
 		
-	}
-
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext)
-			throws BeansException {
-		this.applicationContext = applicationContext;
 	}
 	
 }
