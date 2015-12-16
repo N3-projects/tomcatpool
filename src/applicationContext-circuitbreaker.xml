@@ -15,8 +15,13 @@
         This is the main Spring configuration file with some of the main "core" classes defined. 
     </description>
     
-    <bean id="oppcCircuitBreaker" name="oppcCircuitBreaker" class="com.n3.breaker.spring.CircuitBreakerFactoryBean">
+    <bean id="oppcCircuitBreaker" class="com.n3.breaker.spring.CircuitBreakerFactoryBean">
 		<property name="name" value="oppc"/>
+		<property name="stateManager">
+			<bean class="com.n3.logic.StateManagerImpl" />
+		</property>
+		<property name="concurrency" value="5"/>
+		<property name="bufferSize" value="5"/>
 	</bean>
 
 	<aop:config proxy-target-class="true"  />
@@ -26,6 +31,9 @@
 			<bean class="org.springframework.aop.aspectj.AspectJExpressionPointcut">
 				<property name="expression" value="execution(* com.n3..*.RestService.service(..))" />
 			</bean>
+		</property>
+		<property name="advice">
+			<bean class="com.n3.logic.CircuitBreakerInterceptor" />
 		</property>
 	</bean>
 	

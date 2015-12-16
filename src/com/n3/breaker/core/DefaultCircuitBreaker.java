@@ -1,6 +1,5 @@
 package com.n3.breaker.core;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -11,55 +10,53 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.n3.breaker.CircuitBreaker;
-import com.n3.breaker.CircuitBreakerState;
+import com.n3.breaker.RequestHandler;
 import com.n3.breaker.ResponseDTO;
-import com.n3.logic.CircuitBreakerStateConfigLogic;
-import com.n3.model.CircuitBreakerStateConfig;
-import com.n3.util.ApplicationContextHolder;
 
 public class DefaultCircuitBreaker implements CircuitBreaker {
 
 	private static final Logger logger = LoggerFactory.getLogger(CircuitBreaker.class);
 	private final String name;
-	private final int concurrency;
-	private final int bufferSize;
+	private final StateManager stateManager;
+	private volatile int concurrency;
+	private volatile int bufferSize;
 	private volatile CircuitBreakerState state;
 	
-	public DefaultCircuitBreaker(String name, int concurrency, int bufferSize) {
+	public DefaultCircuitBreaker(String name, int concurrency, int bufferSize, StateManager stateManager) {
 		this.name = name;
 		this.concurrency = concurrency;
 		this.bufferSize = bufferSize;
-		this.transferToClosedState();
+		this.stateManager = stateManager;
 	}
 	
-	public ResponseDTO syncHandle(Callable<ResponseDTO> task, Object requestEntity, long timeoutSeconds)
+	public ResponseDTO syncHandle(RequestHandler handler, long timeoutSeconds)
 			throws RejectedExecutionException, TimeoutException, InterruptedException, ExecutionException {
-		if(task==null) {
-			throw new IllegalArgumentException("callable task can not be null");
-		}
-		ResponseDTO result = null;
 		final CircuitBreakerState currentState = state;
+		if(handler==null) {
+			throw new IllegalArgumentException("requestHandler can not be null");
+		}
 		Future<ResponseDTO> future = null;
 		try {
-			future = currentState.handle(task);
+			future = currentState.handle(handler);
 		} catch(RejectedExecutionException e) {
-			logger.error(currentState.getClass().getSimpleName()+"拒绝请求:" + requestEntity);
+			logger.error(currentState.getClass().getSimpleName()+"拒绝请求:" + handler.getRequestEntity()+" RejectedExecutionException:"+e.getMessage());
 			throw e;
 		} 
+		ResponseDTO result = null;
 		try {
 			result = future.get(timeoutSeconds, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
-			logger.error("请求超时:" + requestEntity);
+			logger.error("请求超时:" + handler.getRequestEntity());
 			throw e;
 		} catch (InterruptedException e) {
-			logger.error("请求中断:" + requestEntity, e);
+			logger.error("请求中断:" + handler.getRequestEntity(), e);
 			throw e;
 		} catch (ExecutionException e) {
-			logger.error("处理失败:" + requestEntity, e);
+			logger.error("处理失败:" + handler.getRequestEntity(), e);
 			throw e;
 		} finally {
 			future.cancel(true);
-			currentState.writeback(requestEntity, result);
+			currentState.writeback(handler.getRequestEntity(), result);
 		}
 		return result;
 	}
@@ -75,28 +72,20 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
 //		return state.handle(task);
 //	}
 
-	public String getName() {
-		return name;
-	}
-	
 	protected synchronized boolean transferToClosedState() {
 		if(state!=null && state instanceof ClosedState) {
 			logger.info("circuit breaker named "+name+" is already in closed state, ignore transfer command");
 			return false;
 		}
-		CircuitBreakerStateConfig stateConfig = null;
+		CircuitBreakerState newState = null;
 		try {
-			CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
-					ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
-			stateConfig = circuitBreakerStateConfigLogic.getStateConfig(ClosedState.class, name);
+			newState = stateManager.newClosedState(this);
 		} catch (Exception e) {
-			logger.error("读取CircuitBreakerStateConfig配置失败", e);
+			logger.error("读取ClosedState配置失败", e);
 		}
-		ClosedState newState = stateConfig == null ? new ClosedState(this)
-				: new ClosedState(this,
-						stateConfig.getThresholdFailureTimes(),
-						stateConfig.getThresholdFailureRate(),
-						stateConfig.getPeriodSeconds());
+		if(newState == null) {
+			newState = new ClosedState(this);
+		}
 		if (state != null) {
 			state.destroy();
 		}
@@ -110,16 +99,15 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
 			logger.info("circuit breaker named "+name+" is already in open state, ignore transfer command");
 			return false;
 		}
-		CircuitBreakerStateConfig stateConfig = null;
+		CircuitBreakerState newState = null;
 		try {
-			CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
-					ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
-			stateConfig = circuitBreakerStateConfigLogic.getStateConfig(OpenState.class, name);
+			newState = stateManager.newOpenState(this);
 		} catch (Exception e) {
-			logger.error("读取CircuitBreakerStateConfig配置失败", e);
+			logger.error("读取OpenState配置失败", e);
 		}
-		OpenState newState = stateConfig == null ? new OpenState(this)
-		: new OpenState(this,stateConfig.getDelaySeconds());
+		if(newState == null) {
+			newState = new OpenState(this);
+		}
 		if(state != null) {
 			state.destroy();
 		}
@@ -133,24 +121,20 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
 			logger.info("circuit breaker named "+name+" is already in open state, ignore transfer command");
 			return false;
 		}
-		CircuitBreakerStateConfig stateConfig = null;
+		CircuitBreakerState newState = null;
 		try {
-			CircuitBreakerStateConfigLogic circuitBreakerStateConfigLogic = 
-					ApplicationContextHolder.getApplicationContext().getBean(CircuitBreakerStateConfigLogic.class);
-			stateConfig = circuitBreakerStateConfigLogic.getStateConfig(HalfOpenState.class, name);
+			newState = stateManager.newHalfOpenState(this);
 		} catch (Exception e) {
-			logger.error("读取CircuitBreakerStateConfig配置失败", e);
+			logger.error("读取HalfOpenState配置失败", e);
 		}
-		HalfOpenState newState = stateConfig == null ? new HalfOpenState(
-				this) : new HalfOpenState(this,
-						stateConfig.getTargetTimes(),
-						stateConfig.getThresholdSuccessTimes(),
-						stateConfig.getThresholdSuccessRate());
-				if (state != null) {
-					state.destroy();
-				}
-				state = newState;
-				logger.info("CircuitBreaker "+name+" 已切换至HalfOpenState");
+		if(newState == null) {
+			newState = new HalfOpenState(this);
+		}
+		if (state != null) {
+			state.destroy();
+		}
+		state = newState;
+		logger.info("CircuitBreaker "+name+" 已切换至HalfOpenState");
 		return true;
 	}
 	
@@ -167,4 +151,25 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
 	public int getBufferSize() {
 		return bufferSize;
 	}
+
+	public void setConcurrency(int concurrency) {
+		this.concurrency = concurrency;
+	}
+
+	public void setBufferSize(int bufferSize) {
+		this.bufferSize = bufferSize;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public void init() {
+		if(state == null) {
+			transferToClosedState();
+		}
+	}
+
 }

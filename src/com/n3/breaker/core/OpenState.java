@@ -1,6 +1,5 @@
 package com.n3.breaker.core;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -9,10 +8,10 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.n3.breaker.CircuitBreaker;
+import com.n3.breaker.RequestHandler;
 import com.n3.breaker.ResponseDTO;
 
-class OpenState extends AbstractCircuitBreakerState {
+public class OpenState extends AbstractCircuitBreakerState {
 	
 	private static final Logger logger = LoggerFactory.getLogger(OpenState.class);
 	
@@ -23,15 +22,14 @@ class OpenState extends AbstractCircuitBreakerState {
 		executor = null;
 	}
 	
-	public OpenState(DefaultCircuitBreaker circuitBreaker, Long delayMinites) {
+	public OpenState(DefaultCircuitBreaker circuitBreaker, Long delaySeconds) {
 		super(circuitBreaker);
 		executor = new ScheduledThreadPoolExecutor(1);
-		executor.schedule(new OpenStateSchedule(), delayMinites, TimeUnit.SECONDS);
+		executor.schedule(new OpenStateSchedule(), delaySeconds, TimeUnit.SECONDS);
 	}
 	
 	@Override
-	public Future<ResponseDTO> handle(Callable<ResponseDTO> task) {
-//		logger.debug("OpenState 拒绝请求，requestEntity="+task.);
+	public Future<ResponseDTO> handle(RequestHandler task) {
 		throw new RejectedExecutionException("OpenState Threshold Reached");
 	}
 
@@ -53,8 +51,8 @@ class OpenState extends AbstractCircuitBreakerState {
 				logger.info("达到临界条件，切换至HalfOpenState");
 				circuitBreaker.transferToHalfOpenState();
 			} catch (Exception e) {
-				e.printStackTrace();
-				Thread.interrupted();
+				logger.error(null, e);
+				Thread.currentThread().interrupt();
 			}
 		}
 	}

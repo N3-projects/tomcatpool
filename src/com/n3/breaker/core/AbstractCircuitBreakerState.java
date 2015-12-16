@@ -1,6 +1,5 @@
 package com.n3.breaker.core;
 
-import com.n3.breaker.CircuitBreakerState;
 
 public abstract class AbstractCircuitBreakerState implements
 		CircuitBreakerState {

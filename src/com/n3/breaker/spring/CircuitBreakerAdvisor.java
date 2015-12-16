@@ -20,7 +20,7 @@ public class CircuitBreakerAdvisor extends DefaultPointcutAdvisor implements Ini
 			throw new BeanInitializationException("the pointcut of CircuitBreakerAdvisor must be specifically");
 		}
 		if(super.getAdvice()==null) {
-			setAdvice(new CircuitBreakerInterceptor());
+			throw new BeanInitializationException("the advice of CircuitBreakerAdvisor must be specifically");
 		}
 	}
 }

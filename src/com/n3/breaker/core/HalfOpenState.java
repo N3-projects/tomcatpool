@@ -2,18 +2,17 @@ package com.n3.breaker.core;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.n3.breaker.RequestHandler;
 import com.n3.breaker.ResponseDTO;
 
 public class HalfOpenState extends AbstractCircuitBreakerState {
@@ -22,6 +21,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 			
 	private final CountDownLatch latch;
 	private final ExecutorService executor;
+	private final ExecutorService internalPool;
 	private final long maxTryTimes;
 	private final AtomicLong tryTimes;
 	private final AtomicLong successTimes;
@@ -36,22 +36,17 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		this.latch = new CountDownLatch(20);
 		this.executor = Executors.newSingleThreadExecutor();
 		this.executor.submit(new HalfOpenStateTask());
+		this.internalPool = Executors.newFixedThreadPool(this.maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
 		this.thresholdTimes = 0;
 		this.thresholdRate = null;
 	}
 	
 	@Override
-	public Future<ResponseDTO> handle(Callable<ResponseDTO> task) {
+	public Future<ResponseDTO> handle(RequestHandler task) {
 		if(tryTimes.incrementAndGet() > maxTryTimes) {
-//			logger.debug("HalfOpenState 拒绝请求，requestEntity="+requestEntity);
 			throw new RejectedExecutionException("HalfOpenState Threshold Reached");
 		}
-		
-		//提交执行远程RPC
-//		logger.debug("HalfOpenState 处理完成：requestEntity="+requestEntity+" result="+result);
-		FutureTask<ResponseDTO> future = new FutureTask<ResponseDTO>(task);
-		new Thread(future).start();
-		return future;
+		return internalPool.submit(task);
 	}
 	
 	@Override
@@ -71,6 +66,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		this.latch = new CountDownLatch(maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
 		this.executor = Executors.newSingleThreadExecutor();
 		this.executor.submit(new HalfOpenStateTask());
+		this.internalPool = Executors.newFixedThreadPool(this.maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
 		this.thresholdTimes = thresholdTimes;
 		this.thresholdRate = thresholdRate;
 	}
@@ -89,10 +85,8 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 			try {
 				latch.await();
 			} catch (InterruptedException e) {
-				e.printStackTrace();
-				circuitBreaker.transferToOpenState();
+				logger.error(null, e);
 				Thread.currentThread().interrupt();
-				return;
 			}
 			boolean toCloseState = false;
 			long successCount = HalfOpenState.this.successTimes.get();

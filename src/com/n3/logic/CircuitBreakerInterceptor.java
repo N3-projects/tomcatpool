@@ -1,7 +1,9 @@
-package com.n3.breaker.spring;
+package com.n3.logic;
 
 import java.io.Serializable;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import javax.ws.rs.core.UriInfo;
 
@@ -11,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.n3.breaker.CircuitBreaker;
+import com.n3.breaker.RequestHandler;
 import com.n3.breaker.ResponseDTO;
 import com.n3.util.ApplicationContextHolder;
 
@@ -21,23 +24,35 @@ public class CircuitBreakerInterceptor implements MethodInterceptor, Serializabl
 	
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
-		System.out.println(this);
-		Object str = invocation.getArguments()[0];
-		UriInfo uriInfo = (UriInfo)str;
-		int i = Integer.parseInt(uriInfo.getQueryParameters().getFirst("test"));
-		if(i>0) {
-			// get CircuitBreaker from spring context
-			CircuitBreaker circuitBreaker = (CircuitBreaker) ApplicationContextHolder
-					.getApplicationContext().getBean("oppcCircuitBreaker");
-			
-			ResponseDTO dto = circuitBreaker.syncHandle(new InternalRequest(invocation), i, 10L);
-			return dto.isExceptionOccured() ? dto.getExcetion().getMessage() : dto
-					.getResponseEntity().toString();
+		CircuitBreaker circuitBreaker = null;
+		UriInfo uriInfo = (UriInfo)invocation.getArguments()[0];
+		int test = Integer.parseInt(uriInfo.getQueryParameters().getFirst("test"));
+		if(test>0) {
+			circuitBreaker = (CircuitBreaker)ApplicationContextHolder.getApplicationContext().getBean("oppcCircuitBreaker");
+		}
+		if(circuitBreaker!=null) {
+			ResponseDTO dto;
+			try {
+				dto = circuitBreaker.syncHandle(
+						new InternalRequest(invocation), 10L);
+				return dto.isExceptionOccured() ? dto.getExcetion().getMessage() : dto
+						.getResponseEntity().toString();
+			} catch (RejectedExecutionException e) {
+				return "ExecutionException";
+			} catch (TimeoutException e) {
+				return "TimeoutException";
+			} catch (InterruptedException e) {
+				return "InterruptedException";
+			} catch (ExecutionException e) {
+				return "ExecutionException";
+			} catch (Exception e) {
+				return "Exception";
+			}
 		}
 		return invocation.proceed();
 	}
 
-	private class InternalRequest implements Callable<ResponseDTO> {
+	private class InternalRequest implements RequestHandler {
 
 		MethodInvocation invocation;
 		
@@ -54,6 +69,11 @@ public class CircuitBreakerInterceptor implements MethodInterceptor, Serializabl
 				logger.error("交易失败", e);
 				throw new Exception(e);
 			}
+		}
+
+		@Override
+		public Object getRequestEntity() {
+			return invocation.getMethod().getName()+":"+invocation.getArguments();
 		}
 	
 	}

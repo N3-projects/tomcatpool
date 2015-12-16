@@ -6,15 +6,16 @@ import org.springframework.beans.factory.InitializingBean;
 
 import com.n3.breaker.CircuitBreaker;
 import com.n3.breaker.core.DefaultCircuitBreaker;
-import com.n3.logic.CircuitBreakerConfigLogic;
-import com.n3.model.CircuitBreakerConfig;
-import com.n3.util.ApplicationContextHolder;
+import com.n3.breaker.core.StateManager;
 
 public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 		InitializingBean, DisposableBean {
 
 	private CircuitBreaker targetObject;
 	private String name;
+	private int concurrency;
+	private int bufferSize;
+	private StateManager stateManager;
 	
 	@Override
 	public void destroy() throws Exception {	
@@ -26,8 +27,12 @@ public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		if(name==null) {
-			throw new IllegalArgumentException("CircuitBreakerConfig nameed "+name+" is required but actually null");
+			throw new IllegalArgumentException("The name of CircuitBreaker "+name+" is required but actually null");
 		}
+		if(stateManager==null) {
+			throw new IllegalArgumentException("The stateManager of CircuitBreaker "+name+" is required but actually null");
+		}
+		/*
 		//load from database
 		CircuitBreakerConfigLogic logic = (CircuitBreakerConfigLogic)ApplicationContextHolder.getApplicationContext().getBean("circuitBreakerConfigLogic");
 		CircuitBreakerConfig cb = logic.getCircuitBreakerConfig(name);
@@ -35,8 +40,9 @@ public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 			//name does not exists
 			throw new IllegalArgumentException("CircuitBreakerConfig nameed "+name+" dose not exist");
 		}
-		targetObject = new DefaultCircuitBreaker(name, cb.getConcurrency(), cb.getBufferSize());
-//		targetObject.transferToClosedState();
+		*/
+		targetObject = new DefaultCircuitBreaker(name, concurrency, bufferSize, stateManager);
+		targetObject.init();
 	}
 
 	@Override
@@ -54,12 +60,20 @@ public class CircuitBreakerFactoryBean implements FactoryBean<CircuitBreaker>,
 		return true;
 	}
 
-	public String getName() {
-		return name;
-	}
-
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public void setConcurrency(int concurrency) {
+		this.concurrency = concurrency;
+	}
+
+	public void setBufferSize(int bufferSize) {
+		this.bufferSize = bufferSize;
+	}
+
+	public void setStateManager(StateManager stateManager) {
+		this.stateManager = stateManager;
 	}
 
 }

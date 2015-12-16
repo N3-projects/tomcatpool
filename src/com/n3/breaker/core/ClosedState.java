@@ -2,7 +2,6 @@ package com.n3.breaker.core;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -17,6 +16,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.n3.breaker.RequestHandler;
 import com.n3.breaker.ResponseDTO;
 
 public class ClosedState extends AbstractCircuitBreakerState {
@@ -30,8 +30,8 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	private final long thresholdFailureTimes;
 	private final BigDecimal thresholdFailureRate;
 
-	private int failureTimes = 0;
-	private int totalTimes = 0;
+	private int failureTimes;
+	private int totalTimes;
 	
 	public ClosedState(DefaultCircuitBreaker circuitBreaker) {
 		super(circuitBreaker);
@@ -58,7 +58,7 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	}
 
 	@Override
-	public Future<ResponseDTO> handle(Callable<ResponseDTO> task) {
+	public Future<ResponseDTO> handle(RequestHandler task) {
 		lock.readLock().lock();
 		try {
 			//如果达到临界条件，返回
@@ -66,10 +66,10 @@ public class ClosedState extends AbstractCircuitBreakerState {
 //				logger.debug("ClosedState 拒绝请求：requestEntity="+requestEntity);
 				throw new RejectedExecutionException("ClosedState Threshold Reached");
 			}
+			return internalPool.submit(task);
 		} finally {
 			lock.readLock().unlock();
 		}
-		return internalPool.submit(task);
 	}
 
 	@Override

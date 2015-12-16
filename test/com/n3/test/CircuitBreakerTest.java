@@ -1,5 +1,7 @@
 package com.n3.test;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -34,11 +36,16 @@ public class CircuitBreakerTest {
 			Future<?> future = executor.submit(new Callable<HttpResponse>() {
 				@Override
 				public HttpResponse call() throws Exception {
-					try {	
+					try {
 						HttpGet request = new HttpGet("http://localhost:8080/tomcatpool/rest/service?test="+requestEntity.incrementAndGet());
 						HttpClient httpclient = HttpClients.createDefault();
 						HttpResponse response = httpclient.execute(request);
-						System.out.println(response.getStatusLine()+"---"+response.getEntity().getContent());
+						StringBuffer sb = new StringBuffer();
+						BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+						while(br.ready()) {
+							sb.append(br.readLine());
+						}
+						System.out.println(response.getStatusLine()+"---"+sb.toString());
 						return response;
 					} finally {
 						latch.countDown();
