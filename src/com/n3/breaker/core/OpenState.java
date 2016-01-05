@@ -18,8 +18,7 @@ public class OpenState extends AbstractCircuitBreakerState {
 	private final ScheduledThreadPoolExecutor executor;
 
 	protected OpenState(DefaultCircuitBreaker circuitBreaker) {
-		super(circuitBreaker);
-		executor = null;
+		this(circuitBreaker,300L);
 	}
 	
 	public OpenState(DefaultCircuitBreaker circuitBreaker, Long delaySeconds) {

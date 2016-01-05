@@ -29,16 +29,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 	private final long thresholdTimes;
 	
 	protected HalfOpenState(DefaultCircuitBreaker circuitBreaker) {
-		super(circuitBreaker);
-		this.maxTryTimes = 1;
-		this.tryTimes = new AtomicLong(0);
-		this.successTimes = new AtomicLong(0);
-		this.latch = new CountDownLatch(20);
-		this.executor = Executors.newSingleThreadExecutor();
-		this.executor.submit(new HalfOpenStateTask());
-		this.internalPool = Executors.newFixedThreadPool(this.maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
-		this.thresholdTimes = 0;
-		this.thresholdRate = null;
+		this(circuitBreaker, 10L, 7L, null);
 	}
 	
 	@Override
@@ -66,7 +57,7 @@ public class HalfOpenState extends AbstractCircuitBreakerState {
 		this.latch = new CountDownLatch(maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
 		this.executor = Executors.newSingleThreadExecutor();
 		this.executor.submit(new HalfOpenStateTask());
-		this.internalPool = Executors.newFixedThreadPool(this.maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
+		this.internalPool = Executors.newFixedThreadPool(maxTryTimes<=Integer.MAX_VALUE ? (int)maxTryTimes : Integer.MAX_VALUE);
 		this.thresholdTimes = thresholdTimes;
 		this.thresholdRate = thresholdRate;
 	}

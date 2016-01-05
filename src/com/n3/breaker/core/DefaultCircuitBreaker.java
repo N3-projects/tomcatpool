@@ -1,5 +1,6 @@
 package com.n3.breaker.core;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -15,7 +16,7 @@ import com.n3.breaker.ResponseDTO;
 
 public class DefaultCircuitBreaker implements CircuitBreaker {
 
-	private static final Logger logger = LoggerFactory.getLogger(CircuitBreaker.class);
+	private static final Logger logger = LoggerFactory.getLogger(DefaultCircuitBreaker.class);
 	private final String name;
 	private final StateManager stateManager;
 	private volatile int concurrency;
@@ -45,14 +46,21 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
 		ResponseDTO result = null;
 		try {
 			result = future.get(timeoutSeconds, TimeUnit.SECONDS);
+		} catch (CancellationException e) {
+			logger.error("请求取消:" + handler.getRequestEntity());
+			result = new ErrorResponseDTO(e);
+			throw e;
 		} catch (TimeoutException e) {
 			logger.error("请求超时:" + handler.getRequestEntity());
+			result = new ErrorResponseDTO(e);
 			throw e;
 		} catch (InterruptedException e) {
 			logger.error("请求中断:" + handler.getRequestEntity(), e);
+			result = new ErrorResponseDTO(e);
 			throw e;
 		} catch (ExecutionException e) {
 			logger.error("处理失败:" + handler.getRequestEntity(), e);
+			result = new ErrorResponseDTO(e);
 			throw e;
 		} finally {
 			future.cancel(true);

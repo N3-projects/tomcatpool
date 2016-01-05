@@ -16,7 +16,7 @@
     </description>
     
     <bean id="oppcCircuitBreaker" class="com.n3.breaker.spring.CircuitBreakerFactoryBean">
-		<property name="name" value="oppc"/>
+		<property name="name" value="ppcs"/>
 		<property name="stateManager">
 			<bean class="com.n3.logic.StateManagerImpl" />
 		</property>

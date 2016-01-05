@@ -3,7 +3,6 @@ package com.n3.breaker.core;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -34,13 +33,7 @@ public class ClosedState extends AbstractCircuitBreakerState {
 	private int totalTimes;
 	
 	public ClosedState(DefaultCircuitBreaker circuitBreaker) {
-		super(circuitBreaker);
-		this.lock = new ReentrantReadWriteLock();
-		this.executor = new ScheduledThreadPoolExecutor(1);
-		this.executor.scheduleAtFixedRate(new ClosedStateTask(), 60, 60, TimeUnit.SECONDS);
-		this.thresholdFailureTimes = 100;
-		this.thresholdFailureRate = new BigDecimal("0.60");
-		this.internalPool = Executors.newFixedThreadPool(200);
+		this(circuitBreaker, 50L, new BigDecimal("0.60"), 300L);
 	}
 	
 	public ClosedState(DefaultCircuitBreaker circuitBreaker, long thresholdFailureTimes, BigDecimal thresholdFailureRate, long periodSeconds) {
@@ -51,8 +44,8 @@ public class ClosedState extends AbstractCircuitBreakerState {
 		this.thresholdFailureTimes = thresholdFailureTimes;
 		this.thresholdFailureRate = thresholdFailureRate;
 		this.internalPool = new ThreadPoolExecutor(
-				circuitBreaker.getConcurrency() / 2,
-				circuitBreaker.getConcurrency(), 300, TimeUnit.SECONDS,
+				circuitBreaker.getConcurrency(),
+				circuitBreaker.getConcurrency(), 0, TimeUnit.SECONDS,
 				new LinkedBlockingQueue<Runnable>(circuitBreaker
 						.getBufferSize()), new ThreadPoolExecutor.AbortPolicy());
 	}

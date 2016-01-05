@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="ERROR">
+
+	<Properties>
+		<Property name="logDir">D:/Program Files/apache-tomcat-7.0.64/logs</Property>
+	</Properties>
+	<appenders>
+	<!-- 日志文件  appender定义 -->
+	<RollingFile name="rollingfile" filename="${logDir}/weblogs/tomcatpool.log" 
+		filePattern="${logDir}/weblogs/tomcatpool.log.%d{yyyy-MM-dd}.gz">
+		<PatternLayout pattern="%d %p [%c] - %m %n" />
+		<Policies>
+		<TimeBasedTriggeringPolicy />
+		</Policies>
+	</RollingFile>
+
+	<!-- 屏幕输出  appender定义 -->
+	<Console name="console" target="SYSTEM_OUT">
+        <!--控制台只输出level及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+        <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
+        <!--这个都知道是输出日志的格式-->
+        <PatternLayout pattern="%d %p [%c] - %m %n"/>
+    </Console>
+	</appenders>
+
+	<loggers>
+	<root level="debug">
+		<appender-ref ref="rollingfile" />
+	    <appender-ref ref="console" />
+	</root>
+	<!-- 业务信息默认为INFO级别  -->
+	<logger name="com.n3" level="debug" /> 
+	
+	<logger name="org.springframework" level="info" />
+	
+	<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+	<logger name="org.hibernate.type.descriptor.sql.BasicExtractor" level="TRACE"/>
+	<logger name="org.hibernate.SQL" level="DEBUG"/>
+	<logger name="org.hibernate.engine.QueryParameters" level="DEBUG"/>
+	<logger name="org.hibernate.engine.query.HQLQueryPlan" level="DEBUG"/>
+	<logger name="org.hibernate" level="info" />
+
+	</loggers>
+	
+</configuration>
+<!-- 
+# This is the configuring for logging displayed in the Application Server
+log4j.rootCategory=DEBUG, stdout,logfile
+
+#stdout configure
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern= %d %p [%c] - %m%n
+
+#logfile configure
+log4j.appender.logfile=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.logfile.File=${catalina.base}/logs/tomcatpool.log
+log4j.appender.logfile.layout=org.apache.log4j.PatternLayout
+log4j.appender.logfile.layout.ConversionPattern= %d %p [%c] - <%m>%n
+
+#Async Database Appender (Store business message)
+#log4j.appender.DB=javacommon.log.appender.QueueAppender
+#log4j.appender.DB.QueueName=dblog
+
+# Control logging for other open source packages
+# Changing the log level to DEBUG when debug
+log4j.logger.org.springframework=INFO
+log4j.logger.org.springframework.jdbc.core.JdbcTemplate=INFO
+
+# debug log for hibernate3
+log4j.logger.org.hibernate.SQL=DEBUG
+log4j.logger.org.hibernate=INFO
+log4j.logger.java.sql.Connection=DEBUG
+log4j.logger.java.sql.Statement=DEBUG
+log4j.logger.java.sql.PreparedStatement=DEBUG
+log4j.logger.java.sql.ResultSet=DEBUG
+
+# Changing the log level to DEBUG will display SQL Hibernate generated
+log4j.logger.net.sf.ehcache=ERROR
+log4j.logger.org.apache.http=INFO
+log4j.logger.org.apache.commons.validator.ValidatorResources=INFO
+
+#com.n3
+log4j.logger.com.n3=DEBUG
+
+#DBLog level with Async Database appender 
+#log4j.logger.DBLog=INFO,DB
+#log4j.additivity.DBLog=false
+ -->
